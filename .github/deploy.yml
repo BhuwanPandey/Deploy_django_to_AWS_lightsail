@@ -1,0 +1,27 @@
+name: Django CI/CD
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cloning repo
+        uses: actions/checkout@v2
+
+      - name: Deploy to Lightsail
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          LIGHTSAIL_IP: ${{ secrets.LIGHTSAIL_IP }}
+          LIGHTSAIL_USERNAME: ${{ secrets.LIGHTSAIL_USERNAME }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$DEPLOY_SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H $LIGHTSAIL_IP >> ~/.ssh/known_hosts
+          rsync -avz --exclude='.git*' --exclude='.github' ./LIGHTSAIL_USERNAME@$LIGHTSAIL_IP:~/Deploy_django_to_AWS_lightsail
+          ssh $LIGHTSAIL_USERNAME@$LIGHTSAIL_IP 'bash Deploy_django_to_AWS_lightsail/scripts/deploy.sh'
+
+      - name: Deployment completed Successfully
+        run: echo "Deployment completed successfully"
